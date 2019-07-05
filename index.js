@@ -90,7 +90,7 @@ FtdiDevice.prototype.open = function (settings, callback) {
  */
 FtdiDevice.prototype.write = function (data, callback) {
     if (!Buffer.isBuffer(data)) {
-        data = new Buffer.from(data);
+        data = Buffer.from(data);
     }
     var self = this;
     this.FTDIDevice.write(data, function (err) {
