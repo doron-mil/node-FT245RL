@@ -218,8 +218,9 @@ module.exports = {
         openDevice(aFtdiDevice, aCallback);
     },
 
+    // TO DO - solve issue when trying to close already closed
     closeDevice: (aFtdiDevice, aCallback) => {
-        aFtdiDevice.close();
+        aFtdiDevice.close(aCallback);
     },
 
     /**

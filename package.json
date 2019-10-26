@@ -9,6 +9,7 @@
   },
   "gypfile": true,
   "scripts": {
+    "test": "node test",
     "postinstall": "node-gyp clean configure rebuild"
   },
   "keywords": [
