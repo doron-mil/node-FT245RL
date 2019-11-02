@@ -107,9 +107,9 @@ DeviceListBaton* FindAllAsync(int vid, int pid)
       for(DWORD i = 0; i < numDevs; i++)
       {
         uv_mutex_lock(&libraryMutex);
-        FT_ListDevices((PVOID)i, listBaton->devInfo[i].SerialNumber, FT_LIST_BY_INDEX | FT_OPEN_BY_SERIAL_NUMBER);
-        FT_ListDevices((PVOID)i, listBaton->devInfo[i].Description, FT_LIST_BY_INDEX | FT_OPEN_BY_DESCRIPTION);
-        FT_ListDevices((PVOID)i, &listBaton->devInfo[i].LocId, FT_LIST_BY_INDEX | FT_OPEN_BY_LOCATION);
+        FT_ListDevices((PVOID)(uintptr_t)(i), listBaton->devInfo[i].SerialNumber, FT_LIST_BY_INDEX | FT_OPEN_BY_SERIAL_NUMBER);
+        FT_ListDevices((PVOID)(uintptr_t)(i), listBaton->devInfo[i].Description, FT_LIST_BY_INDEX | FT_OPEN_BY_DESCRIPTION);
+        FT_ListDevices((PVOID)(uintptr_t)(i), &listBaton->devInfo[i].LocId, FT_LIST_BY_INDEX | FT_OPEN_BY_LOCATION);
         uv_mutex_unlock(&libraryMutex);
       }
     }
@@ -184,7 +184,8 @@ class FindAllWorker : public Nan::AsyncWorker {
       argv[1] = Nan::Undefined();
     }
 
-    callback->Call(2, argv);
+    Nan::AsyncResource resource("node-zk:CALLBACK_EPILOG");
+    callback->Call(2, argv,&resource);
 
     if(listBaton->devInfo != NULL)
     {
@@ -212,8 +213,8 @@ NAN_METHOD(FindAll) {
   }
   if (info[0]->IsNumber() && info[1]->IsNumber())
   {
-    vid = (int) info[0]->NumberValue();
-    pid = (int) info[1]->NumberValue();
+    vid = (int) info[0]->ToInteger(Nan::GetCurrentContext()).ToLocalChecked()->Value();
+    pid = (int) info[1]->ToInteger(Nan::GetCurrentContext()).ToLocalChecked()->Value();
   }
 
   // callback
