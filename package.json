@@ -1,6 +1,7 @@
 {
   "name": "ft245rl",
-  "version": "1.3.0",
+  "version": "1.3.1",
+  "gypfile": true,
   "description": "FT245RL bindings for Node.js.Based on ftdi package",
   "main": "index.js",
   "author": "Eldar-Doron-Miller",
@@ -13,7 +14,10 @@
     "bindings": "^1.5.0",
     "nan": "^2.14.0"
   },
-  "gypfile": true,
+    "repository": {
+    "type": "git",
+    "url": "https://github.com/doron-mil/node-FT245RL"
+  },
   "keywords": [
     "FT245RL",
     "ftdi",
