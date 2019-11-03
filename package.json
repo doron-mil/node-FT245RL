@@ -1,5 +1,5 @@
 {
-  "name": "FT245RL",
+  "name": "ft245rl",
   "version": "1.3.0",
   "description": "FT245RL bindings for Node.js.Based on ftdi package",
   "main": "index.js",

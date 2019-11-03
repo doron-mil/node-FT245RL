@@ -11,7 +11,7 @@ You can fork or copy this project to use it or
 
 You can : 
    
-    "npm install FT245RL"
+    "npm install ft245rl"
    
 
 You can see a sample test in 
