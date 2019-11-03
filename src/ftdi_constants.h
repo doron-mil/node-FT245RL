@@ -41,7 +41,7 @@
 #define FT_STATUS_18				"FT_OTHER_ERROR"
 
 #define FT_STATUS_CUSTOM_ALREADY_OPEN				"Device Already open"
-#define FT_STATUS_CUSTOM_ALREADY_CLOSING			"Device Already closing"
+#define FT_STATUS_CUSTOM_ALREADY_CLOSING			"Device Already closed"
 
 // Lock for Library Calls
 extern uv_mutex_t libraryMutex;
