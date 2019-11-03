@@ -249,14 +249,19 @@ module.exports = {
      */
     switchPorts: (aFtdiDevice, aPortsOnArray) => {
         if (!aFtdiDevice) {
-            return Promise.reject(new Error('Invalid aFtdiDevice input')) ;
+            return Promise.reject(new Error('Invalid FTDI Device input'));
         }
         if (!aPortsOnArray || !Array.isArray(aPortsOnArray)) {
-            return Promise.reject(new Error('Invalid aPortsOnArray input')) ;
+            const newError = new Error('Invalid aPortsOnArray input');
+            aFtdiDevice.emit('error', newError);
+            return Promise.reject(newError);
         }
         const portsLength = aPortsOnArray.length;
         if (!(portsLength === 4 || portsLength === 8) || aPortsOnArray.some(v => !(v === 0 || v === 1))) {
-            return Promise.reject(new Error('Invalid aPortsOnArray input; Must be 4/8 length and contain only 1/0 data')) ;
+            const newError =
+                new Error(`Invalid Array input; Must be 4/8 length and contain only 1/0 data. Array = ${aPortsOnArray}`);
+            aFtdiDevice.emit('error', newError);
+            return Promise.reject(newError);
         }
 
         const data = convertPortsOnArrayToData(aPortsOnArray);
@@ -269,7 +274,7 @@ module.exports = {
 
     switchAllPorts: (aFtdiDevice, aIsOn, aCallback) => {
         if (!aFtdiDevice) {
-            return Promise.reject(new Error('Invalid aFtdiDevice input'));
+            return Promise.reject(new Error('Invalid FTDI Device input'));
         }
 
         return writeToDevice(aFtdiDevice, aIsOn ? [0xff] : [0x00]);

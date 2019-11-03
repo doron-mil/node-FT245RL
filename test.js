@@ -183,7 +183,7 @@ funcMap[3] = () => {
 };
 
 
-funcMap[0]();
+// funcMap[0]();
 // funcMap[1]();
 // funcMap[2]();
-// funcMap[3]();
+funcMap[3]();
