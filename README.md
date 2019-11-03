@@ -9,11 +9,10 @@ device.**
     
 You can fork or copy this project to use it or
 
-You can add 
+You can : 
    
-    "ft245rl": "doron-mil/FT245RL"
-    
-to your dependencies clause in package.json
+    "npm install FT245RL"
+   
 
 You can see a sample test in 
     [node-FT245RL-test](https://github.com/doron-mil/node-FT245RL-test)

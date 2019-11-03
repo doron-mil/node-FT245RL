@@ -1,23 +1,24 @@
 {
   "name": "FT245RL",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "FT245RL bindings for Node.js.Based on ftdi package",
   "main": "index.js",
+  "author": "Eldar-Doron-Miller",
+  "license": "MIT",
+  "scripts": {
+    "test": "node test",
+    "postinstall": "node-gyp clean configure rebuild"
+  },
   "dependencies": {
     "bindings": "^1.5.0",
     "nan": "^2.14.0"
   },
   "gypfile": true,
-  "scripts": {
-    "test": "node test",
-    "postinstall": "node-gyp clean configure rebuild"
-  },
   "keywords": [
     "FT245RL",
     "ftdi",
     "usb",
     "driver",
     "device"
-  ],
-  "license": "MIT"
+  ]
 }
