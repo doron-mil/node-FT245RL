@@ -1,5 +1,5 @@
 const util = require('util');
-const EventEmitter = require('events').EventEmitter;
+const EventEmitter = require('events');
 const ftdi = require('bindings')('FT245RL.node');
 // const ftdi = require('FT245RL');
 const FTDIDriver = ftdi.FtdiDriver;
@@ -36,12 +36,34 @@ function FtdiDevice(settings) {
         settings = { index: settings };
     }
 
-    EventEmitter.call(this);
+    this.emmiter = EventEmitter.call(this);
+    this.oldEmitFunc = this.emit;
+
+    this.emit = (event, ...args) => {
+        try {
+            return this.oldEmitFunc(event, args);
+        } catch (err) {
+            if (this.listenerCount()) {
+                console.error('Failed to emit event. Error :  ', err);
+            } else {
+                console.error('Failed to emit event. All Listeners are removed. Error : ', err);
+            }
+        }
+    };
 
     this.deviceSettings = settings;
 
     this.FTDIDevice = new FTDIDevice(settings);
 }
+
+// FtdiDevice.prototype.emit = (event , ...args ) =>{
+//     console.log( '********' , event)
+//     try {
+//         return this.oldParentFunction(event, args);
+//     } catch (err) {
+//         console.error( 'Failed to emit event. Might be that all Listeners are removed ', err )
+//     }
+// };
 
 util.inherits(FtdiDevice, EventEmitter);
 
@@ -49,10 +71,8 @@ util.inherits(FtdiDevice, EventEmitter);
  * The open mechanism of the device.
  * On opened 'open' will be emitted and the callback will be called.
  * On error 'error' will be emitted and the callback will be called.
- * @param  {Function} callback The function, that will be called when device is opened. [optional]
- *                             `function(err){}`
  */
-FtdiDevice.prototype.open = function (settings, callback) {
+FtdiDevice.prototype.open = function (settings) {
     var self = this;
 
     if (typeof (settings.bitmode) === 'string') {
@@ -60,71 +80,81 @@ FtdiDevice.prototype.open = function (settings, callback) {
     }
 
     this.connectionSettings = settings;
-    this.on('error', function (err) {
-        self.close();
-    });
+    // this.on('error', function (err) {
+    //     self.close();
+    // });
     this.isClosing = false;
-    this.FTDIDevice.open(this.connectionSettings, function (err, data) {
-        if (err) {
-            self.emit('error', err);
-        }
-        self.emit('data', data);
-    }, function (err) {
-        if (err) {
-            self.emit('error', err);
-        } else {
-            self.emit('open');
-        }
-        if (callback) {
-            callback(err);
-        }
+    const rePromise = new Promise((resolve, reject) => {
+        let promiseHandled = false;
+        this.FTDIDevice.open(this.connectionSettings, function (err, data) {
+            if (err) {
+                self.emit('error', err);
+                if (!promiseHandled) reject(err);
+            } else {
+                self.emit('data', data);
+            }
+        }, function (err) {
+            if (err) {
+                self.emit('error', err);
+                reject(err);
+            } else {
+                self.emit('open');
+                resolve();
+            }
+            promiseHandled = true;
+        });
     });
+    return rePromise;
 };
 
 /**
  * The write mechanism.
  * @param  {Array || Buffer} data     The data, that should be sent to device.
  * On error 'error' will be emitted and the callback will be called.
- * @param  {Function}        callback The function, that will be called when data is sent. [optional]
- *                                    `function(err){}`
  */
-FtdiDevice.prototype.write = function (data, callback) {
+FtdiDevice.prototype.write = function (data) {
     if (!Buffer.isBuffer(data)) {
         data = Buffer.from(data);
     }
-    var self = this;
-    this.FTDIDevice.write(data, function (err) {
-        if (err) {
-            self.emit('error', err);
-        }
-        if (callback) {
-            callback(err);
-        }
+    const self = this;
+    const retPromise = new Promise((resolve, reject) => {
+        this.FTDIDevice.write(data, function (err) {
+            if (err) {
+                self.emit('error', err);
+                reject(err);
+            } else {
+                resolve();
+            }
+        });
     });
+    return retPromise;
 };
 
 /**
  * The close mechanism of the device.
  * On closed 'close' will be emitted and the callback will be called.
  * On error 'error' will be emitted and the callback will be called.
- * @param  {Function} callback The function, that will be called when device is closed. [optional]
- *                             `function(err){}`
  */
-FtdiDevice.prototype.close = function (callback) {
-    var self = this;
-    if (this.isClosing) {
-        return;
-    }
-    this.isClosing = true;
-    this.FTDIDevice.close(function (err) {
-        if (err) {
-            self.emit('error', err);
-        } else {
-            self.emit('close');
+FtdiDevice.prototype.close = function () {
+    const retPromise = new Promise((resolve, reject) => {
+        const self = this;
+        if (this.isClosing) {
+            reject(new Error('Device already closed'));
+            return;
         }
-        self.removeAllListeners();
-        if (callback) callback(err);
+        this.isClosing = true;
+        this.FTDIDevice.close(function (err) {
+            if (err) {
+                self.emit('error', err);
+                reject(err);
+            } else {
+                self.emit('close');
+                resolve();
+            }
+            self.removeAllListeners();
+        });
     });
+    return retPromise;
 };
 
 /**
@@ -144,36 +174,23 @@ const convertPortsOnArrayToData = (aPortsOnArray) => {
  *
  * @param {FtdiDevice} aFtdiDevice
  * @param {number} aPortsOnArray
- * @param {(err)=>()} aCallback
  */
-const writeToDevice = (aFtdiDevice, aData, aCallback) => {
-    aFtdiDevice.write(aData, function (err) {
-        aCallback(undefined);
-    });
+const writeToDevice = (aFtdiDevice, aData) => {
+    return aFtdiDevice.write(aData);
 };
 
 /**
  *
  * @param {FtdiDevice} aFtdiDevice
- * @param {(err)=>()} aCallback
  */
-const openDevice = (aFtdiDevice, aCallback) => {
-    aFtdiDevice.open({
+const openDevice = (aFtdiDevice) => {
+    return aFtdiDevice.open({
         baudrate: 9600,
         databits: 8,
         stopbits: 1,
         parity: 'none',
         bitmode: bitmodes.sync, // for bit bang
         bitmask: 0xff    // for bit bang
-    }, function (err) {
-
-        if (err) {
-            aCallback(err);
-            return;
-        }
-
-        aCallback(undefined);
-
     });
 };
 
@@ -214,13 +231,13 @@ module.exports = {
         });
     },
 
-    openDevice: (aFtdiDevice, aCallback) => {
-        openDevice(aFtdiDevice, aCallback);
+    openDevice: (aFtdiDevice) => {
+        return openDevice(aFtdiDevice);
     },
 
     // TO DO - solve issue when trying to close already closed
-    closeDevice: (aFtdiDevice, aCallback) => {
-        aFtdiDevice.close(aCallback);
+    closeDevice: (aFtdiDevice) => {
+        return aFtdiDevice.close();
     },
 
     /**
@@ -230,36 +247,32 @@ module.exports = {
      *          Must be 4 or 8 with 0 or 1 content
      * @param {(err)=>()} aCallback
      */
-    switchPorts: (aFtdiDevice, aPortsOnArray, aCallback) => {
+    switchPorts: (aFtdiDevice, aPortsOnArray) => {
         if (!aFtdiDevice) {
-            aCallback(new Error('Invalid aFtdiDevice input'));
-            return;
+            return Promise.reject(new Error('Invalid aFtdiDevice input')) ;
         }
         if (!aPortsOnArray || !Array.isArray(aPortsOnArray)) {
-            aCallback(new Error('Invalid aPortsOnArray input'));
-            return;
+            return Promise.reject(new Error('Invalid aPortsOnArray input')) ;
         }
         const portsLength = aPortsOnArray.length;
         if (!(portsLength === 4 || portsLength === 8) || aPortsOnArray.some(v => !(v === 0 || v === 1))) {
-            aCallback(new Error('Invalid aPortsOnArray input; Must be 4/8 length and contain only 1/0 data '));
-            return;
+            return Promise.reject(new Error('Invalid aPortsOnArray input; Must be 4/8 length and contain only 1/0 data')) ;
         }
 
         const data = convertPortsOnArrayToData(aPortsOnArray);
 
         // console.log('aaaaa', data.);
 
-        writeToDevice(aFtdiDevice, [data], aCallback);
+        return writeToDevice(aFtdiDevice, [data]);
 
     },
 
     switchAllPorts: (aFtdiDevice, aIsOn, aCallback) => {
         if (!aFtdiDevice) {
-            aCallback(new Error('Invalid aFtdiDevice input'));
-            return;
+            return Promise.reject(new Error('Invalid aFtdiDevice input'));
         }
 
-        writeToDevice(aFtdiDevice, aIsOn ? [0xff] : [0x00], aCallback);
+        return writeToDevice(aFtdiDevice, aIsOn ? [0xff] : [0x00]);
     }
 
 };

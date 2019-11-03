@@ -4,7 +4,7 @@
   "description": "FT245RL bindings for Node.js.Based on ftdi package",
   "main": "index.js",
   "dependencies": {
-    "bindings": "^1.2.1",
+    "bindings": "^1.5.0",
     "nan": "^2.14.0"
   },
   "gypfile": true,
