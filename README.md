@@ -1,4 +1,5 @@
-# FT245RL:
+[![npm](https://img.shields.io/npm/v/ft245rl.svg)](https://npmjs.org/package/ft245rl)
+
 
 **This project is an addON for controling FT245RL
 device.**
